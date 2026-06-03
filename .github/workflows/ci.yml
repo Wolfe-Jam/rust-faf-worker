@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: cargo test + wasm build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Clean rustup with the wasm32 target — no Homebrew-rust PATH shadow here
+      # (that trap is macOS-local; ubuntu runners only have rustup).
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Unit tests (native) — the FAF tool dispatch
+        run: cargo test --lib
+
+      - name: Install worker-build
+        run: cargo install worker-build --locked
+
+      - name: WASM build (proves it compiles for Cloudflare Workers)
+        run: worker-build --release

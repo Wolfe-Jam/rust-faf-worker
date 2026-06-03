@@ -1,0 +1,8 @@
+name = "rust-faf-worker"
+main = "build/worker/shim.mjs"
+compatibility_date = "2026-01-01"
+
+# Rust → WASM build via worker-build (workers-rs). Produces build/worker/shim.mjs
+# + the wasm module. Deploy with `wrangler deploy`.
+[build]
+command = "worker-build --release"

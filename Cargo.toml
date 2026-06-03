@@ -1,0 +1,28 @@
+[package]
+name = "rust-faf-worker"
+version = "0.1.0"
+edition = "2021"
+authors = ["wolfejam <wolfejam@faf.one>"]
+description = "Rust-WASM FAF MCP tool executor on Cloudflare Workers — the edge-native backend behind mcpaas.live/rust/mcp/v1."
+license = "MIT"
+repository = "https://github.com/Wolfe-Jam/rust-faf-mcp"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# workers-rs runtime (compiles to wasm32, runs on CF Workers).
+# Must be >= 0.8 to match worker-build 0.8.x.
+worker = "0.8"
+# FAF tool logic — pure Rust, wasm-clean (parse / validate / score / stringify).
+# Published crate (reproducible in CI / off-machine). Uses only the stable
+# parse/validate/stringify API. Default features are wasm-clean (axum/tower/http
+# are opt-in, tokio is dev-only).
+faf-rust-sdk = "2.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level = "s"   # optimize for size — smaller wasm = faster cold starts
+lto = true
