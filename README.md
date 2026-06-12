@@ -23,6 +23,8 @@ Stateless JSON-RPC — `tools/list` + `tools/call` → the FS-free FAF read tool
 data methods here; this Worker executes them in WASM. Write tools that need a filesystem stay in the
 native `rust-faf-mcp` stdio binary.
 
+If `rust-faf-worker` has been useful, consider starring the repo — it helps others find it.
+
 ## License
 
 MIT
