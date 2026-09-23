@@ -5,4 +5,6 @@ compatibility_date = "2026-01-01"
 # Rust → WASM build via worker-build (workers-rs). Produces build/worker/shim.mjs
 # + the wasm module. Deploy with `wrangler deploy`.
 [build]
-command = "worker-build --release"
+# Workers Builds does not ship worker-build, so install it in the same shell
+# (a fresh step would lose ~/.cargo/bin from PATH). No-op locally once present.
+command = "cargo install -q worker-build && worker-build --release"
