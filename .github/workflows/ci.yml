@@ -24,7 +24,10 @@ jobs:
         run: cargo test --lib
 
       - name: Install worker-build
-        run: cargo install worker-build --locked
+        # Pinned: worker-build passes --force-enable-abort-handler, which only
+        # exists from wasm-bindgen 0.2.128. Unpinned, a new worker-build lands
+        # against whatever wasm-bindgen Cargo.lock holds and the WASM build dies.
+        run: cargo install worker-build --version 0.8.6 --locked
 
       - name: WASM build (proves it compiles for Cloudflare Workers)
         run: worker-build --release
@@ -49,7 +52,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       - name: Install worker-build
-        run: cargo install worker-build --locked
+        # Pinned: worker-build passes --force-enable-abort-handler, which only
+        # exists from wasm-bindgen 0.2.128. Unpinned, a new worker-build lands
+        # against whatever wasm-bindgen Cargo.lock holds and the WASM build dies.
+        run: cargo install worker-build --version 0.8.6 --locked
 
       # wrangler runs `[build] command = "worker-build --release"` from
       # wrangler.toml itself, so no explicit build step is needed here.
