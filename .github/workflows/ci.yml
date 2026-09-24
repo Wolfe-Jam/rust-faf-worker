@@ -28,3 +28,36 @@ jobs:
 
       - name: WASM build (proves it compiles for Cloudflare Workers)
         run: worker-build --release
+
+  deploy:
+    name: deploy to Cloudflare
+    runs-on: ubuntu-latest
+    # Only on a real push to main, and only once the wasm build above passed —
+    # a Worker that fails `cargo test` should never reach the edge.
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cloudflare Workers Builds cannot do this: its image ships Node, Python,
+      # Ruby and Go, with no Rust at all (proven 2026-09-23, build 3a75d9ef —
+      # `/bin/sh: 1: cargo: not found`). A real toolchain is why deploy lives here.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install worker-build
+        run: cargo install worker-build --locked
+
+      # wrangler runs `[build] command = "worker-build --release"` from
+      # wrangler.toml itself, so no explicit build step is needed here.
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_WORKERS_DEPLOY_TOKEN }}
+
+      - name: Confirm what is live
+        run: npx wrangler deployments list | tail -20
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKERS_DEPLOY_TOKEN }}
