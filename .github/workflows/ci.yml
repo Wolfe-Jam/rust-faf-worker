@@ -61,9 +61,9 @@ jobs:
       # wrangler.toml itself, so no explicit build step is needed here.
       - uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_WORKERS_DEPLOY_TOKEN }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Confirm what is live
         run: npx wrangler deployments list | tail -20
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKERS_DEPLOY_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
