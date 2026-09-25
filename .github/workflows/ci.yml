@@ -59,16 +59,16 @@ jobs:
 
       # wrangler runs `[build] command = "worker-build --release"` from
       # wrangler.toml itself, so no explicit build step is needed here.
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        # Also as env. The `apiToken` input alone returned "Authentication error
-        # [code: 10000]" with a token that deploys fine by hand; the env form is
-        # exactly what works locally, and what the step below already uses.
+      # Not cloudflare/wrangler-action@v3: it installs wrangler 3.90.0, which
+      # returns "Authentication error [code: 10000]" for a token that deploys
+      # fine by hand, and warns in its own logs that it is out-of-date. This is
+      # verbatim the command proven to work locally, on a pinned wrangler 4.
+      - name: Deploy to Cloudflare Workers
+        run: npx --yes wrangler@4.139.0 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Confirm what is live
-        run: npx wrangler deployments list | tail -20
+        run: npx --yes wrangler@4.139.0 deployments list | tail -20
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
