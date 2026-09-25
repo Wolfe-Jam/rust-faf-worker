@@ -62,6 +62,11 @@ jobs:
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # Also as env. The `apiToken` input alone returned "Authentication error
+        # [code: 10000]" with a token that deploys fine by hand; the env form is
+        # exactly what works locally, and what the step below already uses.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Confirm what is live
         run: npx wrangler deployments list | tail -20
