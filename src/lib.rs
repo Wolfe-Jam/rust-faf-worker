@@ -67,13 +67,15 @@ fn handle_call(params: &Value) -> Value {
     }
 
     match name {
+        // validate() checks structure only; the score is score(), the always-33
+        // faf-kernel that faf-cli and every FAF MCP use (faf-rust-sdk 3.x).
         "faf_validate" => match faf_rust_sdk::parse(content) {
             Ok(faf) => {
                 let v = faf_rust_sdk::validate(&faf);
                 tool_text(
                     json!({
                         "valid": v.valid,
-                        "score": v.score,
+                        "score": always33(content),
                         "errors": v.errors,
                         "warnings": v.warnings
                     })
@@ -83,11 +85,9 @@ fn handle_call(params: &Value) -> Value {
             }
             Err(e) => tool_text(format!("parse error: {}", e), true),
         },
+        // Parse first, so content that isn't a .faf is an error, not a score.
         "faf_score" => match faf_rust_sdk::parse(content) {
-            Ok(faf) => {
-                let v = faf_rust_sdk::validate(&faf);
-                tool_text(format!("FAF score: {}%", v.score), false)
-            }
+            Ok(_) => tool_text(format!("FAF score: {}%", always33(content)), false),
             Err(e) => tool_text(format!("parse error: {}", e), true),
         },
         "faf_read" => match faf_rust_sdk::parse(content) {
@@ -101,6 +101,11 @@ fn handle_call(params: &Value) -> Value {
     }
 }
 
+/// The always-33 score for raw `.faf` content, 0 when it can't be scored.
+fn always33(content: &str) -> u32 {
+    faf_rust_sdk::score(content).map(|r| r.score).unwrap_or(0)
+}
+
 fn tool_list() -> Value {
     let content_schema = json!({
         "type": "object",
@@ -110,12 +115,12 @@ fn tool_list() -> Value {
     json!([
         {
             "name": "faf_validate",
-            "description": "Validate a .faf and return completeness score + errors/warnings (Rust→WASM, at the edge).",
+            "description": "Validate a .faf: structure errors/warnings plus the always-33 score faf-cli gives (Rust→WASM, at the edge).",
             "inputSchema": content_schema
         },
         {
             "name": "faf_score",
-            "description": "Score a .faf — 0-100 completeness (Rust→WASM, at the edge).",
+            "description": "Score a .faf 0-100 with the always-33 faf-kernel, the same score faf-cli gives (Rust→WASM, at the edge).",
             "inputSchema": content_schema
         },
         {
@@ -183,6 +188,17 @@ mod tests {
         let r = call("faf_score", "not a valid faf file");
         assert_eq!(r["isError"], true);
         assert!(r["content"][0]["text"].as_str().unwrap().contains("error"));
+    }
+
+    // Same numbers as faf-cli 8.x `faf score` (always-33) on the same files.
+    #[test]
+    fn scores_match_faf_cli_always_33() {
+        let three = "faf_version: 2.5.0\nproject:\n  name: harbor-notes\n  goal: notes app\n  main_language: TypeScript\n";
+        let ten = "faf_version: 2.5.0\nproject:\n  name: harbor-notes\n  goal: A small notes app\n  main_language: TypeScript\nstack:\n  frontend: Svelte 5\n  build: Vite\n  runtime: Node 22\n  hosting: Cloudflare Pages\nhuman_context:\n  who: Harbour office staff\n  what: Log arrivals\n  why: Replace a paper logbook\n";
+        assert_eq!(call("faf_score", three)["content"][0]["text"], "FAF score: 9%");
+        assert_eq!(call("faf_score", ten)["content"][0]["text"], "FAF score: 30%");
+        let v: Value = serde_json::from_str(call("faf_validate", ten)["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(v["score"], 30);
     }
 
     #[test]
